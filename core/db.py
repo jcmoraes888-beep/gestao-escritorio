@@ -116,6 +116,14 @@ class Prazo(Base):
     processo: Mapped[Processo] = relationship(back_populates="prazos")
 
 
+class TentativaLogin(Base):
+    """Tentativas de login com erro (para bloquear quem tenta adivinhar senhas)."""
+    __tablename__ = "tentativas_login"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(160), index=True)
+    quando: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
 # ---------- Conexão ----------
 class ErroConfiguracao(RuntimeError):
     pass

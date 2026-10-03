@@ -149,3 +149,38 @@ def test_recibo(s):
     repo.registrar_pagamento(s, pa.id, date(2026, 10, 2), "1000", "PIX")
     pdf = gerar_recibo_pdf(repo.dados_recibo(s, pa.id), PADRAO)
     assert pdf[:4] == b"%PDF" and len(pdf) > 5000
+
+
+def test_bloqueio_e_ativacao(s, monkeypatch):
+    auth.criar_usuario(s, "Adv", "a@x.com", "senha-forte-1", "admin")
+    for _ in range(auth.MAX_TENTATIVAS):
+        assert auth.autenticar(s, "a@x.com", "errada") is None
+    with pytest.raises(auth.ErroBloqueio):
+        auth.autenticar(s, "a@x.com", "senha-forte-1")  # bloqueado mesmo com a senha certa
+    # e-mail inexistente também conta (não revela quais e-mails existem)
+    for _ in range(auth.MAX_TENTATIVAS):
+        auth.autenticar(s, "nao@existe.com", "x")
+    assert auth.minutos_bloqueado(s, "nao@existe.com") > 0
+
+
+def test_primeiro_admin_exige_codigo(s, monkeypatch):
+    monkeypatch.delenv("CODIGO_ATIVACAO", raising=False)
+    with pytest.raises(repo.ErroValidacao, match="Configure"):
+        auth.criar_primeiro_admin(s, "A", "a@x.com", "senha-forte-1", "", exigir_codigo=True)
+    monkeypatch.setenv("CODIGO_ATIVACAO", "LV-2026-abc")
+    with pytest.raises(repo.ErroValidacao, match="incorreto"):
+        auth.criar_primeiro_admin(s, "A", "a@x.com", "senha-forte-1", "chute", exigir_codigo=True)
+    u = auth.criar_primeiro_admin(s, "A", "a@x.com", "senha-forte-1", " LV-2026-abc ", exigir_codigo=True)
+    assert u.perfil == "admin"
+    with pytest.raises(repo.ErroValidacao, match="já foi criado"):
+        auth.criar_primeiro_admin(s, "B", "b@x.com", "senha-forte-1", "LV-2026-abc", exigir_codigo=True)
+
+
+def test_backup(s):
+    from core.backup import gerar_backup_xlsx
+    c = repo.salvar_cliente(s, {"nome": "Fulano"})
+    auth.criar_usuario(s, "Adv", "a@x.com", "senha-forte-1")
+    dados, cont = gerar_backup_xlsx(s)
+    assert dados[:2] == b"PK" and cont["Clientes"] == 1 and cont["Usuarios"] == 1
+    import io, pandas as pd
+    assert "senha_hash" not in pd.read_excel(io.BytesIO(dados), sheet_name="Usuarios").columns

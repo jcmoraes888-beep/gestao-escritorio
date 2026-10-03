@@ -15,7 +15,14 @@ with st.form("trocar_senha", clear_on_submit=True):
     nova = st.text_input("Nova senha (mín. 8 caracteres)", type="password")
     nova2 = st.text_input("Confirme a nova senha", type="password")
     if st.form_submit_button("Alterar senha"):
-        if not auth.autenticar(db(), u["email"], atual):
+        bloqueio = None
+        try:
+            confere = auth.autenticar(db(), u["email"], atual)
+        except auth.ErroBloqueio as e:
+            confere, bloqueio = None, str(e)
+        if bloqueio:
+            st.error(bloqueio)
+        elif not confere:
             st.error("Senha atual incorreta.")
         elif nova != nova2:
             st.error("As senhas não conferem.")
@@ -53,3 +60,19 @@ if outros:
             alvo.ativo = not alvo.ativo
             db().commit()
             st.rerun()
+
+
+st.divider()
+st.subheader("💾 Backup")
+st.caption("Baixa todos os dados do escritório em Excel (clientes, processos, parcelas, prazos e usuários, "
+           "sem as senhas). Faça pelo menos uma vez por semana e guarde em local seguro: o arquivo contém dados "
+           "pessoais protegidos pela LGPD.")
+if st.button("Gerar backup"):
+    from datetime import date
+
+    from core.backup import gerar_backup_xlsx
+
+    dados, cont = gerar_backup_xlsx(db())
+    st.success("Backup pronto: " + ", ".join(f"{k}: {v}" for k, v in cont.items()))
+    st.download_button("⬇️ Baixar backup (Excel)", dados, file_name=f"backup_escritorio_{date.today():%Y-%m-%d}.xlsx",
+                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="primary")

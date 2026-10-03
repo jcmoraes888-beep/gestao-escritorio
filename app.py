@@ -57,8 +57,16 @@ def tela_primeiro_acesso(s):
     _cabecalho_marca(largura=320)
     _aviso_banco(s)
     st.subheader("Configuração inicial")
+    # Em produção (banco online) o código de ativação é obrigatório.
+    exigir = s.get_bind().dialect.name != "sqlite" or bool(auth.codigo_ativacao_configurado())
+    if exigir and not auth.codigo_ativacao_configurado():
+        st.error("🔒 Por segurança, a criação do administrador está bloqueada. "
+                 "Configure **CODIGO_ATIVACAO** nos Secrets do Streamlit e recarregue a página.")
+        return
     st.info("Nenhum usuário cadastrado ainda. Crie o usuário administrador do escritório.")
     with st.form("primeiro_admin"):
+        codigo = st.text_input("Código de ativação", type="password",
+                               help="Fornecido por quem instalou o sistema.") if exigir else ""
         nome = st.text_input("Nome")
         email = st.text_input("E-mail")
         senha = st.text_input("Senha (mín. 8 caracteres)", type="password")
@@ -68,11 +76,12 @@ def tela_primeiro_acesso(s):
                 st.error("As senhas não conferem.")
             else:
                 try:
-                    u = auth.criar_usuario(s, nome, email, senha, "admin")
+                    u = auth.criar_primeiro_admin(s, nome, email, senha, codigo, exigir)
                     _logar(u)
                     st.rerun()
                 except Exception as e:
                     s.rollback()
+                    time.sleep(1)
                     st.error(str(e))
 
 
@@ -87,7 +96,11 @@ def tela_login(s):
             email = st.text_input("E-mail")
             senha = st.text_input("Senha", type="password")
             if st.form_submit_button("Entrar", type="primary", width="stretch"):
-                u = auth.autenticar(s, email, senha)
+                try:
+                    u = auth.autenticar(s, email, senha)
+                except auth.ErroBloqueio as e:
+                    st.error(str(e))
+                    return
                 if u:
                     _logar(u)
                     st.rerun()
