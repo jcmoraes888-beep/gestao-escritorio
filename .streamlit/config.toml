@@ -1,0 +1,22 @@
+# Identidade visual: vinho + dourado (logo Lesly Vargas)
+[theme]
+base = "dark"
+primaryColor = "#C9A14A"
+backgroundColor = "#140C0D"
+secondaryBackgroundColor = "#241517"
+textColor = "#F3EBE0"
+headingFont = "serif"
+borderColor = "#3A2326"
+
+[theme.sidebar]
+backgroundColor = "#8C0F13"
+secondaryBackgroundColor = "#A3171C"
+textColor = "#F7EFE3"
+primaryColor = "#E2C27A"
+borderColor = "#A3171C"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
