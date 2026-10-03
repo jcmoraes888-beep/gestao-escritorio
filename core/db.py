@@ -159,9 +159,13 @@ def _database_url() -> str:
     return url
 
 
-@lru_cache(maxsize=4)
 def get_engine(url: str | None = None):
-    url = url or _database_url()
+    # A URL é lida a cada chamada: se o Secrets mudar, a conexão nova é usada sem reiniciar o app.
+    return _criar_engine(url or _database_url())
+
+
+@lru_cache(maxsize=4)
+def _criar_engine(url: str):
     if not url.startswith(("sqlite", "postgresql")):
         raise ErroConfiguracao("DATABASE_URL deve começar com postgresql+psycopg2:// (veja o README).")
     kwargs = {"pool_pre_ping": True}

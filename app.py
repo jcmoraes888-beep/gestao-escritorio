@@ -41,9 +41,16 @@ def _cabecalho_marca(largura: int | None = None):
 
 
 def _aviso_banco(s):
-    if s.get_bind().dialect.name == "sqlite":
-        st.warning("⚠️ Usando o **banco LOCAL de teste** (data/escritorio.db). "
-                   "Para usar o Supabase, configure DATABASE_URL no .streamlit/secrets.toml.")
+    if s.get_bind().dialect.name != "sqlite":
+        return
+    try:
+        chaves = list(st.secrets.keys())
+    except Exception:
+        chaves = []
+    st.warning("⚠️ Usando o **banco LOCAL de teste**. Os dados daqui NÃO ficam salvos online.\n\n"
+               f"Configurações encontradas nos Secrets: **{', '.join(chaves) or 'nenhuma'}**. "
+               "É preciso ter **DATABASE_URL** (em Settings → Secrets no Streamlit Cloud). "
+               "Versão do app: 2026-10-03b")
 
 
 def tela_primeiro_acesso(s):
