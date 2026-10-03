@@ -39,7 +39,7 @@ def estilo_moeda(df, colunas):
     import pandas as pd
 
     cols = [c for c in colunas if c in df.columns]
-    return df.style.format({c: (lambda x: brl(x) if pd.notna(x) else "") for c in cols})
+    return df.style.format({c: (lambda x: brl(x) if pd.notna(x) else "") for c in cols}, na_rep="")
 
 
 def data(label: str):

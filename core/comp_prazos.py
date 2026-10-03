@@ -30,7 +30,8 @@ def tabela_prazos(df: pd.DataFrame, chave: str, ocultar: list[str] | None = None
         ocultar.append("Concluído em")
     vis = df.drop(columns=[c for c in ocultar if c in df.columns]).reset_index(drop=True)
     ev = st.dataframe(
-        vis.style.map(_cor, subset=["Status"]), hide_index=True, width="stretch",
+        vis.style.map(_cor, subset=["Status"]).format(
+            {"Faltam (dias)": lambda x: "" if pd.isna(x) else f"{int(x)}"}, na_rep=""), hide_index=True, width="stretch",
         on_select="rerun", selection_mode="single-row", key=chave,
         column_config={"id": None, "processo_id": None, "Data": data("Data"), "Concluído em": data("Concluído em"),
                        "Faltam (dias)": st.column_config.NumberColumn("Faltam (dias)", format="%d")},
@@ -119,9 +120,9 @@ def form_prazo(chave: str, processos: dict | None = None, processo_id: int | Non
             st.warning(f"Atenção: {data_final:%d/%m/%Y} não é dia útil ({motivo}).")
 
     a, b = st.columns([1, 2])
-    hora = a.text_input("Hora", value=(prazo.hora or "") if prazo else "", placeholder="14:30", key=k("hora"))
+    hora = a.text_input("Hora", value=(prazo.hora or "") if prazo else "", placeholder="ex.: 14:30 (opcional)", key=k("hora"))
     local = b.text_input("Local / link", value=(prazo.local or "") if prazo else "", key=k("local"),
-                         placeholder="Ex.: Fórum de Cascavel, sala 3 ou link da videoconferência")
+                         placeholder="ex.: Fórum de Cascavel, sala 3 ou link da videoconferência")
     obs = st.text_input("Observações", value=(prazo.observacoes or "") if prazo else "", key=k("obs"))
     if st.button("💾 Salvar prazo", type="primary", key=k("salvar")):
         ok, _ = tratar_erro(repo.salvar_prazo, db(), {

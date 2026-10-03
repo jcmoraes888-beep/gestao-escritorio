@@ -22,7 +22,7 @@ def tabela_parcelas(df: pd.DataFrame, chave: str, ocultar: list[str] | None = No
     """Mostra parcelas com status colorido e seleção de uma linha. Retorna a linha selecionada."""
     vis = df.drop(columns=[c for c in (ocultar or []) if c in df.columns])
     estilo = vis.style.map(colorir_status, subset=["Status"]).format(
-        {"Valor": v.brl, "Valor pago": lambda x: v.brl(x) if pd.notna(x) else ""}
+        {"Valor": v.brl, "Valor pago": lambda x: v.brl(x) if pd.notna(x) else ""}, na_rep=""
     )
     ev = st.dataframe(estilo, hide_index=True, width="stretch", on_select="rerun",
                       selection_mode="single-row", key=chave, column_config=COLUNAS_PARCELA)
